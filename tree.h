@@ -33,4 +33,4 @@ struct avltree* maxKeyAVL(struct avltree* avltree);
 
 struct avltree* deleteNode(struct avltree* root, int key);
 
-void preOrder(struct avltree* root);
+void AVLtree_print(struct avltree* root);

@@ -24,6 +24,17 @@ int max(int a, int b)
     }
 }
 
+//Печать дерева
+void AVLtree_print(struct avltree* root)
+{
+    if (root != NULL)
+    {
+        printf("%d ", root->key);
+        AVLtree_print(root->left);
+        AVLtree_print(root->right);
+    }
+}
+
 //Освобождение памяти
 void avltree_free(struct avltree* tree)
 {
@@ -97,6 +108,28 @@ struct avltree* AVLTree_LRotate(struct avltree* x)
     return y;
 }
 
+// Min ключ
+struct avltree* minKeyAVL(struct avltree* avltree)
+{
+    struct avltree* current = avltree;
+    while (current->left != NULL)
+    {
+        current = current->left;
+    }
+    return current;
+}
+
+// Max ключ
+struct avltree* maxKeyAVL(struct avltree* avltree)
+{
+    struct avltree* current = avltree;
+    while (current->right != NULL)
+    {
+        current = current->right;
+    }
+    return current;
+}
+
 //Коэффициент сбалансированности узла Node
 int AVLTree_balance(struct avltree* Node)
 {
@@ -107,25 +140,8 @@ int AVLTree_balance(struct avltree* Node)
     return AVLTree_height(Node->left) - AVLTree_height(Node->right);
 }
 
-struct avltree* avltree_insert(struct avltree* avltree, int key)
+struct avltree* avltree_fixup(struct avltree* avltree, int key)
 {
-    if (avltree == NULL)
-    {
-        return (newNode(key));
-    }
-    if (key < avltree->key)
-    {
-        avltree->left = avltree_insert(avltree->left, key);
-    }
-    else if (key > avltree->key)
-    {
-        avltree->right = avltree_insert(avltree->right, key);
-    }
-    else //Одинаковые ключи
-    {
-        return avltree;
-    }
-
     //Обновление высоты предка
     avltree->height = 1 + max(AVLTree_height(avltree->left), AVLTree_height(avltree->right));
 
@@ -160,26 +176,25 @@ struct avltree* avltree_insert(struct avltree* avltree, int key)
     return avltree;
 }
 
-// Min ключ
-struct avltree* minKeyAVL(struct avltree* avltree)
+struct avltree* avltree_insert(struct avltree* avltree, int key)
 {
-    struct avltree* current = avltree;
-    while (current->left != NULL)
+    if (avltree == NULL)
     {
-        current = current->left;
+        return (newNode(key));
     }
-    return current;
-}
-
-// Max ключ
-struct avltree* maxKeyAVL(struct avltree* avltree)
-{
-    struct avltree* current = avltree;
-    while (current->right != NULL)
+    if (key < avltree->key)
     {
-        current = current->right;
+        avltree->left = avltree_insert(avltree->left, key);
     }
-    return current;
+    else if (key > avltree->key)
+    {
+        avltree->right = avltree_insert(avltree->right, key);
+    }
+    else //Одинаковые ключи
+    {
+        return avltree;
+    }
+    return avltree_fixup(avltree, key);
 }
 
 //Удаление узла по ключу, вернёт корень изменённого поддерева
@@ -234,47 +249,5 @@ struct avltree* deleteNode(struct avltree* root, int key)
             root->right = deleteNode(root->right, temp->key);
         }
     }
-
-    //Обновление высоты текущего узла
-    root->height = 1 + max(AVLTree_height(root->left), AVLTree_height(root->right));
-
-    //Берём коэффициент сбалансированности узла для проверки на сбалансированность
-    int balance = AVLTree_balance(root);
-
-    //Повторение случаев из "avltree_insert"
-
-    //Правый поворот
-    if (balance > 1 && AVLTree_balance(root->left) >= 0)
-        return AVLTree_RRotate(root);
-
-    //ЛП поворот
-    if (balance > 1 && AVLTree_balance(root->left) < 0)
-    {
-        root->left = AVLTree_LRotate(root->left);
-        return AVLTree_RRotate(root);
-    }
-
-    //Правый поворот
-    if (balance < -1 && AVLTree_balance(root->right) <= 0)
-        return AVLTree_LRotate(root);
-
-    //ПЛ поворот
-    if (balance < -1 && AVLTree_balance(root->right) > 0)
-    {
-        root->right = AVLTree_RRotate(root->right);
-        return AVLTree_LRotate(root);
-    }
-
-    return root;
-}
-
-//Печать дерева
-void preOrder(struct avltree* root)
-{
-    if (root != NULL)
-    {
-        printf("%d ", root->key);
-        preOrder(root->left);
-        preOrder(root->right);
-    }
+    return avltree_fixup(root, key);
 }
