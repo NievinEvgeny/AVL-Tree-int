@@ -54,7 +54,7 @@ struct avltree* newNode(int key)
     avltree->key = key;
     avltree->left = NULL;
     avltree->right = NULL;
-    avltree->height = 1;
+    avltree->height = 0;
     return (avltree);
 }
 
@@ -140,42 +140,6 @@ int AVLTree_balance(struct avltree* Node)
     return AVLTree_height(Node->left) - AVLTree_height(Node->right);
 }
 
-struct avltree* avltree_fixup(struct avltree* avltree, int key)
-{
-    //Обновление высоты предка
-    avltree->height = 1 + max(AVLTree_height(avltree->left), AVLTree_height(avltree->right));
-
-    //Проверка узла на сбалансированность
-    int balance = AVLTree_balance(avltree);
-
-    //Если не сбалансирован, то 4 варианта
-
-    //Правый поворот
-    if ((balance > 1) && (key < avltree->left->key))
-    {
-        return AVLTree_RRotate(avltree);
-    }
-    //Левый поворот
-    if ((balance < -1) && (key > avltree->right->key))
-    {
-        return AVLTree_LRotate(avltree);
-    }
-    //ЛП поворот
-    if ((balance > 1) && (key > avltree->left->key))
-    {
-        avltree->left = AVLTree_LRotate(avltree->left);
-        return AVLTree_RRotate(avltree);
-    }
-    //ПЛ поворот
-    if ((balance < -1) && (key < avltree->right->key))
-    {
-        avltree->right = AVLTree_RRotate(avltree->right);
-        return AVLTree_LRotate(avltree);
-    }
-    //Вернуть без изменений
-    return avltree;
-}
-
 struct avltree* avltree_insert(struct avltree* avltree, int key)
 {
     if (avltree == NULL)
@@ -194,7 +158,40 @@ struct avltree* avltree_insert(struct avltree* avltree, int key)
     {
         return avltree;
     }
-    return avltree_fixup(avltree, key);
+    //Обновляем высоту предка
+    avltree->height = 1 + max(AVLTree_height(avltree->left), AVLTree_height(avltree->right));
+
+    //Получаем его баланс, чтобы узнать, стал ли он несбалансированным
+    int balance = AVLTree_balance(avltree);
+
+    //Если да, то есть 4 случая
+
+    // Left Left Case
+    if (balance > 1 && key < avltree->left->key)
+    {
+        return AVLTree_RRotate(avltree);
+    }
+
+    // Right Right Case
+    if (balance < -1 && key > avltree->right->key)
+    {
+        return AVLTree_LRotate(avltree);
+    }
+
+    // Left Right Case
+    if (balance > 1 && key > avltree->left->key)
+    {
+        avltree->left = AVLTree_LRotate(avltree->left);
+        return AVLTree_RRotate(avltree);
+    }
+
+    // Right Left Case
+    if (balance < -1 && key < avltree->right->key)
+    {
+        avltree->right = AVLTree_RRotate(avltree->right);
+        return AVLTree_LRotate(avltree);
+    }
+    return avltree;
 }
 
 //Удаление узла по ключу, вернёт корень изменённого поддерева
@@ -216,7 +213,7 @@ struct avltree* deleteNode(struct avltree* root, int key)
         root->right = deleteNode(root->right, key);
     }
 
-    //Если корень и есть искомый узел
+    //Если корень (текущего поддерева) и есть искомый узел
     else
     {
         //Один или ноль потомков
@@ -249,5 +246,45 @@ struct avltree* deleteNode(struct avltree* root, int key)
             root->right = deleteNode(root->right, temp->key);
         }
     }
-    return avltree_fixup(root, key);
+    // Если в дереве был только один узел
+    if (root == NULL)
+    {
+        return root;
+    }
+
+    //Обновляем высоту текущего узла
+    root->height = 1 + max(AVLTree_height(root->left), AVLTree_height(root->right));
+
+    //Получаем его баланс, чтобы узнать, стал ли он несбалансированным
+    int balance = AVLTree_balance(root);
+
+    //Если да, то есть 4 случая
+
+    // Left Left Case
+    if (balance > 1 && AVLTree_balance(root->left) >= 0)
+    {
+        return AVLTree_RRotate(root);
+    }
+
+    // Left Right Case
+    if (balance > 1 && AVLTree_balance(root->left) < 0)
+    {
+        root->left = AVLTree_LRotate(root->left);
+        return AVLTree_RRotate(root);
+    }
+
+    // Right Right Case
+    if (balance < -1 && AVLTree_balance(root->right) <= 0)
+    {
+        return AVLTree_LRotate(root);
+    }
+
+    // Right Left Case
+    if (balance < -1 && AVLTree_balance(root->right) > 0)
+    {
+        root->right = AVLTree_RRotate(root->right);
+        return AVLTree_LRotate(root);
+    }
+
+    return root;
 }
